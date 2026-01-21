@@ -4,6 +4,7 @@ export type WbaPrereq = {
   "instructions": [
     {
       "name": "complete",
+      
       "accounts": [
         {
           "name": "signer",
