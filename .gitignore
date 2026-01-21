@@ -1,0 +1,16 @@
+# Solana local validator data
+**/test-ledger/
+**/ledger/
+
+# Logs
+*.log
+
+# Node
+node_modules/
+
+# Build
+dist/
+build/
+
+# Env
+.env
