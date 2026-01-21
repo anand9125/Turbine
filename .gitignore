@@ -14,3 +14,14 @@ build/
 
 # Env
 .env
+
+
+# Solana local validator / test ledger
+test-ledger/
+**/test-ledger/
+
+# Logs
+*.log
+
+# RocksDB
+*.sst
