@@ -13,18 +13,14 @@ import {
   BN,
 } from "@coral-xyz/anchor";
 import { WbaVault, IDL } from "./programs/wba_vault";
-import wallet from "./wallet/turbin3-wallet.json";
+import wallet from "../turbin3-wallet.json"
 
-// Import our keypair from the wallet file
 const keypair = Keypair.fromSecretKey(new Uint8Array(wallet));
 
-// Commitment
 const commitment: Commitment = "confirmed";
 
-// Create a devnet connection
 const connection = new Connection("https://api.devnet.solana.com");
 
-// Create our anchor provider
 const provider = new AnchorProvider(connection, new Wallet(keypair), {
   commitment,
 });

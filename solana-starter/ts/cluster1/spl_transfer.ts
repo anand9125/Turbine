@@ -17,11 +17,36 @@ const to = new PublicKey("<receiver address>");
 
 (async () => {
     try {
+        const fromAta = await getOrCreateAssociatedTokenAccount(
+            connection,
+            keypair,
+            mint,
+            keypair.publicKey,
+        )
         // Get the token account of the fromWallet address, and if it does not exist, create it
+        const ata = await getOrCreateAssociatedTokenAccount(
+            connection,
+            keypair,
+            mint,
+            to,
+            true,
+        )
+
+        console.log(ata);
+
+        const tx = await transfer(
+            connection,
+            keypair,
+            fromAta.address,
+            ata.address,
+            keypair,
+            10000000000e6,
+        )
 
         // Get the token account of the toWallet address, and if it does not exist, create it
 
-        // Transfer the new token to the "toTokenAccount" we just created
+        console.log(tx);
+
     } catch(e) {
         console.error(`Oops, something went wrong: ${e}`)
     }

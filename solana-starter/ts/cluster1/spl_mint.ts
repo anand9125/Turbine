@@ -1,5 +1,5 @@
 import { Keypair, PublicKey, Connection, Commitment } from "@solana/web3.js";
-import { getOrCreateAssociatedTokenAccount, mintTo } from '@solana/spl-token';
+import { createMint, getAssociatedTokenAddress, getOrCreateAssociatedTokenAccount, mintTo } from '@solana/spl-token';
 import wallet from "../turbin3-wallet.json"
 
 // Import our keypair from the wallet file
@@ -17,12 +17,17 @@ const mint = new PublicKey("<mint address>");
 (async () => {
     try {
         // Create an ATA
-        // const ata = ???
-        // console.log(`Your ata is: ${ata.address.toBase58()}`);
-
-        // Mint to ATA
-        // const mintTx = ???
-        // console.log(`Your mint txid: ${mintTx}`);
+         const ata = await getOrCreateAssociatedTokenAccount(
+            connection,
+            keypair,
+            mint,
+            keypair.publicKey,
+            true,
+            commitment
+         )
+  
+      
+        console.log(`Your mint txid: ${mint}`);
     } catch(error) {
         console.log(`Oops, something went wrong: ${error}`)
     }
