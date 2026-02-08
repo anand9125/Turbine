@@ -17,7 +17,7 @@ pub struct Initialize<'info>{
     #[account(
         init,
         payer = initalizer,
-        seeds = [b"lp",config.key.as_ref()],
+        seeds = [b"lp",config.key().as_ref()],
         bump,
         mint::decimals = 6,
         mint::authority = config
@@ -36,18 +36,18 @@ pub struct Initialize<'info>{
         associated_token::mint = mint_y,
         associated_token::authority = config
     )]
-    pub vualt_y : Account<'info,TokenAccount>,
+    pub vault_y : Account<'info,TokenAccount>,
     #[account(
         init,
         payer = initalizer,
-        space = Config::DISCRIMINATOR.len() + Config::INIT_SPACE,
+        space = 8 + Config::INIT_SPACE,
         seeds = [b"config", seed.to_le_bytes().as_ref()],
         bump
     )]
     pub config : Account<'info,Config>,
     pub system_program : Program<'info,System>,
     pub token_program: Program<'info,Token>,
-    pub associated_token_program : Program<'info,System>
+    pub associated_token_program : Program<'info,AssociatedToken>
 }
 
 

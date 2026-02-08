@@ -1,5 +1,5 @@
 use anchor_lang::prelude::*;
-use crate::{errors::AmmError, state::Config};
+use crate::errors::AmmError;
 
 #[derive(Clone, Copy)]
 pub enum LiquidityPair {
@@ -20,84 +20,51 @@ pub struct ConstantProduct {
 }
 
 impl ConstantProduct {
-    // Swap asset X for asset Y or vice versa with slippage protection
     pub fn swap(
         &mut self,
-        p: LiquidityPair,
-        a: u64,
-        min: u64,
+        pair: LiquidityPair,
+        amount_in: u64,
+        min_out: u64,
     ) -> Result<SwapResult> {
         // apply fee
-        let a2 = (a as u128)
+        let amount_after_fee = (amount_in as u128)
             .checked_mul((10_000 - self.fee) as u128)
-            .ok_or_else(|| anchor_lang::error::Error::from(AmmError::Overflow))?
+            .ok_or(AmmError::Overflow)?
             .checked_div(10_000)
-            .ok_or_else(|| anchor_lang::error::Error::from(AmmError::Overflow))? as u64;
+            .ok_or(AmmError::Overflow)? as u64;
 
-        let (new_x, new_y, withdraw) = match p {
+        let (new_x, new_y, amount_out) = match pair {
             LiquidityPair::X => {
-                let x2 = self.x.checked_add(a2).ok_or_else(|| anchor_lang::error::Error::from(AmmError::Overflow))?;
-                let y2 = Self::y2_from_x_swap_amount(self.x, self.y, a2)?;
-                let delta_y =
-                    Self::delta_y_from_x_swap_amount(self.x, self.y, a2)?;
-                (x2, y2, delta_y)
+                let x2 = self.x.checked_add(amount_after_fee).ok_or(AmmError::Overflow)?;
+                let k = (self.x as u128)
+                    .checked_mul(self.y as u128)
+                    .ok_or(AmmError::Overflow)?;
+                let y2 = (k / x2 as u128) as u64;
+                let dy = self.y.checked_sub(y2).ok_or(AmmError::Underflow)?;
+                (x2, y2, dy)
             }
             LiquidityPair::Y => {
-                let y2 = self.y.checked_add(a2).ok_or_else(|| anchor_lang::error::Error::from(AmmError::Overflow))?;
-                let x2 = Self::x2_from_y_swap_amount(self.x, self.y, a2)?;
-                let delta_x =
-                    Self::delta_x_from_y_swap_amount(self.x, self.y, a2)?;
-                (x2, y2, delta_x)
+                let y2 = self.y.checked_add(amount_after_fee).ok_or(AmmError::Overflow)?;
+                let k = (self.x as u128)
+                    .checked_mul(self.y as u128)
+                    .ok_or(AmmError::Overflow)?;
+                let x2 = (k / y2 as u128) as u64;
+                let dx = self.x.checked_sub(x2).ok_or(AmmError::Underflow)?;
+                (x2, y2, dx)
             }
         };
 
-        require!(withdraw >= min, AmmError::SlippageExceeded);
+        require!(amount_out >= min_out, AmmError::SlippageExceeded);
 
-        let fee = a.checked_sub(a2).ok_or_else(|| anchor_lang::error::Error::from(AmmError::Underflow))?;;
+        let fee = amount_in.checked_sub(amount_after_fee).ok_or(AmmError::Underflow)?;
 
         self.x = new_x;
         self.y = new_y;
 
         Ok(SwapResult {
-            deposit: a,
+            deposit: amount_in,
             fee,
-            withdraw,
+            withdraw: amount_out,
         })
-    }
-
-    // ----- math helpers -----
-
-    fn y2_from_x_swap_amount(x: u64, y: u64, dx: u64) -> Result<u64> {
-        let k = (x as u128)
-            .checked_mul(y as u128)
-            .ok_or_else(|| anchor_lang::error::Error::from(AmmError::Overflow))?;
-        let x2 = x.checked_add(dx).ok_or_else(|| anchor_lang::error::Error::from(AmmError::Overflow))? as u128;
-        Ok((k / x2) as u64)
-    }
-
-    fn delta_y_from_x_swap_amount(
-        x: u64,
-        y: u64,
-        dx: u64,
-    ) -> Result<u64> {
-        let y2 = Self::y2_from_x_swap_amount(x, y, dx)?;
-        y.checked_sub(y2).ok_or_else(|| anchor_lang::error::Error::from(AmmError::Underflow))
-    }
-
-    fn x2_from_y_swap_amount(x: u64, y: u64, dy: u64) -> Result<u64> {
-        let k = (x as u128)
-            .checked_mul(y as u128)
-            .ok_or_else(|| anchor_lang::error::Error::from(AmmError::Overflow))?;
-        let y2 = y.checked_add(dy).ok_or_else(|| anchor_lang::error::Error::from(AmmError::Overflow))? as u128;
-        Ok((k / y2) as u64)
-    }
-
-    fn delta_x_from_y_swap_amount(
-        x: u64,
-        y: u64,
-        dy: u64,
-    ) -> Result<u64> {
-        let x2 = Self::x2_from_y_swap_amount(x, y, dy)?;
-        x.checked_sub(x2).ok_or_else(|| anchor_lang::error::Error::from(AmmError::Underflow))
     }
 }
