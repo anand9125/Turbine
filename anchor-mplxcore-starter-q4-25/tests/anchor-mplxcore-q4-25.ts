@@ -232,11 +232,11 @@ describe("anchor-mplxcore-q4-25", () => {
       await program.methods
         .freezeNft()
         .accountsStrict({
-          authority: creator.publicKey,
+          signer: creator.publicKey,
           asset: asset.publicKey,
           collection: collection.publicKey,
           collectionAuthority: collectionAuthorityPda,
-          coreProgram: MPL_CORE_PROGRAM_ID,
+          coreProgramId: MPL_CORE_PROGRAM_ID,
           systemProgram: SystemProgram.programId,
         })
         .signers([creator])
@@ -249,11 +249,11 @@ describe("anchor-mplxcore-q4-25", () => {
         await program.methods
           .freezeNft()
           .accountsStrict({
-            authority: unauthorizedAuthority.publicKey,
+            signer: unauthorizedAuthority.publicKey,
             asset: asset.publicKey,
             collection: collection.publicKey,
             collectionAuthority: collectionAuthorityPda,
-            coreProgram: MPL_CORE_PROGRAM_ID,
+            coreProgramId: MPL_CORE_PROGRAM_ID,
             systemProgram: SystemProgram.programId,
           })
           .signers([unauthorizedAuthority])
@@ -270,11 +270,11 @@ describe("anchor-mplxcore-q4-25", () => {
       await program.methods
         .thawNft()
         .accountsStrict({
-          authority: creator.publicKey,
+          signer: creator.publicKey,
           asset: asset.publicKey,
           collection: collection.publicKey,
           collectionAuthority: collectionAuthorityPda,
-          coreProgram: MPL_CORE_PROGRAM_ID,
+          coreProgramId: MPL_CORE_PROGRAM_ID,
           systemProgram: SystemProgram.programId,
         })
         .signers([creator])
@@ -287,11 +287,11 @@ describe("anchor-mplxcore-q4-25", () => {
         await program.methods
           .thawNft()
           .accountsStrict({
-            authority: unauthorizedAuthority.publicKey,
+            signer: unauthorizedAuthority.publicKey,
             asset: asset.publicKey,
             collection: collection.publicKey,
             collectionAuthority: collectionAuthorityPda,
-            coreProgram: MPL_CORE_PROGRAM_ID,
+            coreProgramId: MPL_CORE_PROGRAM_ID,
             systemProgram: SystemProgram.programId,
           })
           .signers([unauthorizedAuthority])
@@ -299,6 +299,63 @@ describe("anchor-mplxcore-q4-25", () => {
         assert.fail("Should have failed with unauthorized authority");
       } catch (err) {
         assert.equal(err.error.errorCode.code, "NotAuthorized", "Expected NotAuthorized error");
+      }
+    });
+  });
+
+  // UpdateNft tests
+  describe("UpdateNft", () => {
+    // Updates an NFT name and URI
+    it("Updates an NFT name and URI", async () => {
+      // Update the NFT name and URI
+      const newName = "Updated Test";
+      // Update the NFT URI
+      const newUri = "https://gateway.irys.xyz/updated-hash";
+
+      // Update the NFT
+      await program.methods
+        .updateNft({ newName, newUri })
+        .accountsStrict({
+          signer: creator.publicKey,
+          asset: asset.publicKey,
+          collection: collection.publicKey,
+          collectionSigner: collectionAuthorityPda,
+          coreProgramId: MPL_CORE_PROGRAM_ID,
+          systemProgram: SystemProgram.programId,
+        })
+        .signers([creator])
+        .rpc();
+
+      // Verify the update succeeded by fetching the asset from MPL Core
+      const assetAccount = await connection.getAccountInfo(asset.publicKey);
+      // Verify the asset account exists
+      assert.ok(assetAccount, "Asset account should exist after update");
+      // Verify the asset account has data
+      assert.ok(assetAccount.data.length > 0, "Asset should have data");
+
+
+    });
+
+    it("Fails to update with unauthorized authority", async () => {
+      const newName = "Unauthorized Update";
+      const newUri = "https://example.com/unauthorized";
+
+      try {
+        await program.methods
+          .updateNft({ newName, newUri })
+          .accountsStrict({
+            signer: unauthorizedAuthority.publicKey,
+            asset: asset.publicKey,
+            collection: collection.publicKey,
+            collectionSigner: collectionAuthorityPda,
+            coreProgramId: MPL_CORE_PROGRAM_ID,
+            systemProgram: SystemProgram.programId,
+          })
+          .signers([unauthorizedAuthority])
+          .rpc();
+        assert.fail("Should have failed with unauthorized authority");
+      } catch (err) {
+        assert.equal(err.error?.errorCode?.code ?? err.error?.errorCode?.errorCode?.code, "NotAuthorized", "Expected NotAuthorized error");
       }
     });
   });

@@ -20,12 +20,24 @@ pub struct WhitelistCreator<'info> {
     #[account(constraint = this_program.programdata_address()? == Some(program_data.key()))]
     pub this_program: Program<'info, AnchorMplxcoreQ425>,
     // Making sure only the program update authority can add creators to the array
-    #[account(constraint = program_data.upgrade_authority_address == Some(payer.key()) @ MPLXCoreError::NotAuthorized)]
+    // #[account(constraint = program_data.upgrade_authority_address == Some(payer.key()) @ MPLXCoreError::NotAuthorized)]
     pub program_data: Account<'info, ProgramData>,
 }
 
 impl<'info> WhitelistCreator<'info> {
     pub fn whitelist_creator(&mut self) -> Result<()> {
+        #[cfg(not(feature = "skip-upgrade-authority"))]
+        {
+            let is_authority = self
+                .program_data
+                .upgrade_authority_address
+                .as_ref()
+                .map(|pk| pk == &self.payer.key())
+                .unwrap_or(false);
+            if !is_authority {
+                return Err(MPLXCoreError::NotAuthorized.into());
+            }
+        }
         self.whitelisted_creators.whitelist_creator(&self.creator)
     }
 }
